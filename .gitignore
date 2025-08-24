@@ -3,3 +3,6 @@ venv/
 
 # Database files
 notes.db
+
+# Environment variables
+.env
