@@ -57,8 +57,24 @@ def summarize():
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "summarize the following notes"},
+            {"role": "system", "content": "Concisely summarize the following notes."},
             {"role": "user", "content": all_notes}
+        ]
+    )
+    return response.choices[0].message.content
+
+@app.post("/ask")
+def ask(query: Query):
+    cursor.execute("SELECT content FROM notes WHERE content LIKE ?", (f"%{query.query}%",))
+    match = " ".join([content[0] for content in cursor.fetchall()])
+    if not match:
+        return "No matching notes found."
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "Answer the user's question based on the provided notes."},
+            {"role": "user", "content": f"Notes: {match}\nQuestion: {query.query}"}
         ]
     )
     return response.choices[0].message.content
