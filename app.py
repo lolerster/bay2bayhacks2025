@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 from fastapi import FastAPI
 import sqlite3
 from pydantic import BaseModel
@@ -14,6 +14,10 @@ app = FastAPI()
 # OpenAI API key for authentication
 # Get API key from environment variable for security
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
+
+client = OpenAI(api_key=OPENAI_KEY)
 
 # Database setup
 conn = sqlite3.connect('notes.db', check_same_thread=False)
@@ -26,7 +30,7 @@ cursor.execute('''
 ''')
 conn.commit()
 
-# API modeels
+# API models
 class Note(BaseModel):
     content: str
 
@@ -36,7 +40,7 @@ class Query(BaseModel):
 # Endpoints
 @app.post("/add_note")
 def add_note(note: Note):
-    cursor.execute("INSERT INTO notes (content) VALUES (?)", (note.content))
+    cursor.execute("INSERT INTO notes (content) VALUES (?)", (note.content,))
     conn.commit()
     return {"message": "Note added successfully"}
 
@@ -48,3 +52,13 @@ def get_notes():
 @app.post("/summarize")
 def summarize():
     cursor.execute("SELECT * FROM notes")
+    all_notes = " ".join([note[1] for note in cursor.fetchall()])
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "summarize the following notes"},
+            {"role": "user", "content": all_notes}
+        ]
+    )
+    return response.choices[0].message.content
