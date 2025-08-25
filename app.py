@@ -39,3 +39,12 @@ def add_note(note: Note):
     cursor.execute("INSERT INTO notes (content) VALUES (?)", (note.content))
     conn.commit()
     return {"message": "Note added successfully"}
+
+@app.get("/get_notes")
+def get_notes():
+    cursor.execute("SELECT * FROM notes")
+    return cursor.fetchall()
+
+@app.post("/summarize")
+def summarize():
+    cursor.execute("SELECT * FROM notes")
