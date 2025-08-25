@@ -3,3 +3,5 @@ openai
 uvicorn
 python-dotenv
 pydantic
+streamlit
+requests
