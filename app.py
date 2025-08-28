@@ -37,13 +37,34 @@ class Note(BaseModel):
 class Query(BaseModel):
     query: str
 
+# Root endpoint
+@app.get("/")
+def root():
+    """Root endpoint - API information"""
+    return {
+        "message": "Bay2BayHacks2025 - AI Notes API",
+        "version": "1.0.0",
+        "endpoints": {
+            "add_note": "POST /add_note",
+            "get_notes": "GET /get_notes", 
+            "summarize": "POST /summarize",
+            "ask": "POST /ask"
+        },
+        "docs": "/docs",
+        "status": "running"
+    }
+
 # Endpoints
 @app.post("/add_note")
 def add_note(note: Note):
-    cursor.execute("INSERT INTO notes (content) VALUES (?)", (note.content,))
-    conn.commit()
-    return {"message": "Note added successfully"}
-
+    try:
+        cur = conn.cursor()  # create a new cursor per request
+        cur.execute("INSERT INTO notes (content) VALUES (?)", (note.content,))
+        conn.commit()
+        return {"message": "Note added successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+    
 @app.get("/get_notes")
 def get_notes():
     cursor.execute("SELECT * FROM notes")
