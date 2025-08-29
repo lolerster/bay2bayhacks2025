@@ -1,7 +1,10 @@
 fastapi
-openai
 uvicorn
+openai
 python-dotenv
-pydantic
 streamlit
 requests
+pydantic
+# Audio processing dependencies
+pydub
+speechrecognition

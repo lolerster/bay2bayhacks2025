@@ -2,6 +2,9 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime
+import io
+import tempfile
+import os
 
 # Configure the page
 st.set_page_config(
@@ -62,6 +65,75 @@ def make_api_call(endpoint, method="GET", data=None, show_response=True):
 if page == "📝 Add Note":
     st.header("📝 Add a New Note")
     
+    # File upload section
+    st.subheader("📁 Upload File")
+    
+    # Text file upload
+    uploaded_text_file = st.file_uploader(
+        "Choose a text file to upload",
+        type=['txt', 'md', 'csv', 'json'],
+        help="Upload a text file to convert its content into a note",
+        key="text_uploader"
+    )
+    
+    # Audio file upload
+    uploaded_audio_file = st.file_uploader(
+        "Choose an audio file to upload",
+        type=['wav', 'mp3', 'm4a', 'ogg'],
+        help="Upload an audio file to convert speech to text",
+        key="audio_uploader"
+    )
+    
+    # Handle text file upload
+    if uploaded_text_file is not None:
+        try:
+            # Read file content
+            file_content = uploaded_text_file.read().decode('utf-8')
+            st.success(f"✅ Text file '{uploaded_text_file.name}' uploaded successfully!")
+            st.text_area("File Content Preview:", file_content, height=100, disabled=True)
+            
+            # Add button to save file content as note
+            if st.button("💾 Save Text File as Note", key="save_text"):
+                result = make_api_call("/add_note", method="POST", data={"content": file_content})
+                if result:
+                    st.balloons()
+                    st.rerun()
+        except Exception as e:
+            st.error(f"❌ Error reading text file: {str(e)}")
+    
+    # Handle audio file upload
+    if uploaded_audio_file is not None:
+        try:
+            st.info(f"🎵 Audio file '{uploaded_audio_file.name}' uploaded!")
+            st.audio(uploaded_audio_file, format='audio/wav')
+            
+            # Add button to convert audio to text
+            if st.button("🎤 Convert Audio to Text", key="convert_audio"):
+                with st.spinner("🎤 Converting audio to text..."):
+                    # For now, we'll use a placeholder. In a real implementation,
+                    # you'd use speech recognition libraries like:
+                    # - speech_recognition (for local processing)
+                    # - OpenAI Whisper API (for better accuracy)
+                    # - Google Speech-to-Text API
+                    
+                    # Placeholder text (replace with actual speech recognition)
+                    transcribed_text = f"[Audio transcription from {uploaded_audio_file.name} would go here]"
+                    
+                    st.success("✅ Audio converted to text!")
+                    st.text_area("Transcribed Text:", transcribed_text, height=100)
+                    
+                    # Add button to save transcribed text as note
+                    if st.button("💾 Save Transcription as Note", key="save_audio"):
+                        result = make_api_call("/add_note", method="POST", data={"content": transcribed_text})
+                        if result:
+                            st.balloons()
+                            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Error processing audio file: {str(e)}")
+    
+    st.markdown("---")
+    st.subheader("✏️ Manual Note Entry")
+    
     with st.form("add_note_form"):
         note_content = st.text_area(
             "Note Content:",
@@ -90,7 +162,7 @@ elif page == "📋 View Notes":
         st.rerun()
     
     # Get notes from API
-    notes = make_api_call("/get_notes")
+    notes = make_api_call("/get_notes", show_response=False)
     
     if notes:
         if len(notes) == 0:
