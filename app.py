@@ -104,33 +104,19 @@ def ask(query: Query):
         if not query.query.strip():
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
+        # Get all notes
+        cursor.execute("SELECT * FROM notes")
+        all_notes = cursor.fetchall()
         
-        # Search for relevant notes using multiple strategies
-        relevant_notes = []
-        
-        # Strategy 1: Direct keyword matching
-        cursor.execute("SELECT id, content FROM notes WHERE content LIKE ?", (f"%{query.query}%",))
-        keyword_matches = cursor.fetchall()
-        relevant_notes.extend(keyword_matches)
-        
-        # Strategy 2: Get all notes if no keyword matches found
-        if not relevant_notes:
-            cursor.execute("SELECT * FROM notes")
-            relevant_notes = cursor.fetchall()
-        
-        if not relevant_notes:
+        if not all_notes:
             return "No notes found to answer your question. Please add some notes first."
         
         # Prepare context with note IDs for better traceability
         context_parts = []
-        for note_id, content in relevant_notes:
+        for note_id, content in all_notes:
             context_parts.append(f"Note #{note_id}: {content}")
         
         context = "\n\n".join(context_parts)
-        
-        # Limit context length to avoid token limits (roughly 3000 characters)
-        if len(context) > 3000:
-            context = context[:3000] + "... (truncated)"
         
         # Enhanced prompt for better responses
         system_prompt = """You are a helpful AI assistant that answers questions based on the user's notes. 
