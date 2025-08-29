@@ -1,9 +1,10 @@
 from openai import OpenAI
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 import sqlite3
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+import io
 
 # Load environment variables from .env file
 load_dotenv()
@@ -48,7 +49,8 @@ def root():
             "add_note": "POST /add_note",
             "get_notes": "GET /get_notes", 
             "summarize": "POST /summarize",
-            "ask": "POST /ask"
+            "ask": "POST /ask",
+            "transcribe_audio": "POST /transcribe_audio"
         },
         "docs": "/docs",
         "status": "running"
@@ -144,3 +146,29 @@ def ask(query: Query):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+
+@app.post("/transcribe_audio")
+async def transcribe_audio(audio_file: UploadFile = File(...)):
+    """Transcribe audio file using OpenAI Whisper API"""
+    try:
+        # Check file type
+        if not audio_file.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail="File must be an audio file")
+        
+        # Read the uploaded file
+        audio_content = await audio_file.read()
+        
+        # Create a file-like object from the audio content
+        audio_file_obj = io.BytesIO(audio_content)
+        audio_file_obj.name = audio_file.filename
+        
+        # Use OpenAI Whisper API for transcription
+        response = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file_obj
+        )
+        
+        return {"transcription": response.text}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")

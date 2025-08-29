@@ -32,13 +32,16 @@ if 'notes' not in st.session_state:
     st.session_state.notes = []
 
 # Function to make API calls
-def make_api_call(endpoint, method="GET", data=None, show_response=True):
+def make_api_call(endpoint, method="GET", data=None, show_response=True, files=None):
     try:
         url = f"{API_BASE_URL}{endpoint}"
         if method == "GET":
             response = requests.get(url)
         elif method == "POST":
-            response = requests.post(url, json=data)
+            if files:
+                response = requests.post(url, files=files)
+            else:
+                response = requests.post(url, json=data)
         elif method == "DELETE":
             response = requests.delete(url)
         
@@ -107,27 +110,39 @@ if page == "📝 Add Note":
             st.info(f"🎵 Audio file '{uploaded_audio_file.name}' uploaded!")
             st.audio(uploaded_audio_file, format='audio/wav')
             
+            # Show transcribed text if it exists in session state (after page refresh)
+            if "transcribed_text" in st.session_state:
+                st.success("✅ Transcribed text available!")
+                st.text_area("Transcribed Text:", st.session_state.transcribed_text, height=100)
+                
+                # Add button to save transcribed text as note
+                if st.button("💾 Save Transcription as Note", key="save_audio_session"):
+                    note_result = make_api_call("/add_note", method="POST", data={"content": st.session_state.transcribed_text}, show_response=True)
+                    if note_result:
+                        st.success("✅ Transcription saved as note!")
+                        st.balloons()
+                        # Clear the transcribed text from session state
+                        del st.session_state.transcribed_text
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to save transcription as note")
+            
             # Add button to convert audio to text
             if st.button("🎤 Convert Audio to Text", key="convert_audio"):
-                with st.spinner("🎤 Converting audio to text..."):
-                    # For now, we'll use a placeholder. In a real implementation,
-                    # you'd use speech recognition libraries like:
-                    # - speech_recognition (for local processing)
-                    # - OpenAI Whisper API (for better accuracy)
-                    # - Google Speech-to-Text API
+                with st.spinner("🎤 Converting audio to text using OpenAI Whisper..."):
+                    # Send audio file to FastAPI for transcription
+                    files = {"audio_file": (uploaded_audio_file.name, uploaded_audio_file.getvalue(), uploaded_audio_file.type)}
+                    result = make_api_call("/transcribe_audio", method="POST", files=files, show_response=False)
                     
-                    # Placeholder text (replace with actual speech recognition)
-                    transcribed_text = f"[Audio transcription from {uploaded_audio_file.name} would go here]"
-                    
-                    st.success("✅ Audio converted to text!")
-                    st.text_area("Transcribed Text:", transcribed_text, height=100)
-                    
-                    # Add button to save transcribed text as note
-                    if st.button("💾 Save Transcription as Note", key="save_audio"):
-                        result = make_api_call("/add_note", method="POST", data={"content": transcribed_text})
-                        if result:
-                            st.balloons()
-                            st.rerun()
+                    if result and "transcription" in result:
+                        transcribed_text = result["transcription"]
+                        # Store in session state so it persists after page refresh
+                        st.session_state.transcribed_text = transcribed_text
+                        st.success("✅ Audio converted to text!")
+                        st.text_area("Transcribed Text:", transcribed_text, height=100)
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to transcribe audio file")
         except Exception as e:
             st.error(f"❌ Error processing audio file: {str(e)}")
     
@@ -184,7 +199,7 @@ elif page == "📋 View Notes":
                             # Check if this is a confirmation click
                             if st.session_state.get(f"confirm_delete_{note[0]}", False):
                                 # Actually delete the note
-                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE")
+                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
                                 if result:
                                     st.success(f"✅ Note #{note[0]} deleted successfully!")
                                     # Clear the confirmation flag
@@ -198,10 +213,10 @@ elif page == "📋 View Notes":
                     
                     # Show confirmation message if needed
                     if st.session_state.get(f"confirm_delete_{note[0]}", False):
-                        st.warning(f"⚠️ Click '🗑️ Delete' again to confirm deletion of Note #{note[0]}")
+                        st.warning(f"⚠️ Click '✅Confirm Delete' to delete the Note #{note[0]}")
                         with col1:
                             if st.button(f"✅ Confirm Delete", key=f"confirm_{note[0]}"):
-                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE")
+                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
                                 if result:
                                     st.success(f"✅ Note #{note[0]} deleted successfully!")
                                     # Clear the confirmation flag
@@ -223,10 +238,6 @@ elif page == "🤖 Summarize Notes":
                 st.markdown("---")
                 st.markdown("### 📋 Summary:")
                 st.write(summary)
-                
-                # Add some styling
-                st.markdown("---")
-                st.info("💡 **Tip:** Add more notes to get better summaries!")
 
 # Page 4: Ask Questions
 elif page == "❓ Ask Questions":
@@ -253,9 +264,6 @@ elif page == "❓ Ask Questions":
                         st.markdown("### 🤖 AI Answer:")
                         st.write(result)
                         
-                        # Add some styling
-                        st.markdown("---")
-                        st.info("💡 **Tip:** Try asking specific questions for better answers!")
             else:
                 st.error("❌ Please enter a question!")
 
