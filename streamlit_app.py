@@ -29,16 +29,25 @@ if 'notes' not in st.session_state:
     st.session_state.notes = []
 
 # Function to make API calls
-def make_api_call(endpoint, method="GET", data=None):
+def make_api_call(endpoint, method="GET", data=None, show_response=True):
     try:
         url = f"{API_BASE_URL}{endpoint}"
         if method == "GET":
             response = requests.get(url)
         elif method == "POST":
             response = requests.post(url, json=data)
+        elif method == "DELETE":
+            response = requests.delete(url)
         
         if response.status_code == 200:
-            return response.json()
+            result = response.json()
+            # Print the return message for debugging/information (only if show_response=True)
+            if show_response:
+                if isinstance(result, dict) and "message" in result:
+                    st.info(f"📢 API Response: {result['message']}")
+                elif isinstance(result, str):
+                    st.info(f"📢 API Response: {result}")
+            return result
         else:
             st.error(f"API Error: {response.status_code} - {response.text}")
             return None
@@ -66,7 +75,6 @@ if page == "📝 Add Note":
             if note_content.strip():
                 result = make_api_call("/add_note", method="POST", data={"content": note_content})
                 if result:
-                    st.success("✅ Note saved successfully!")
                     st.balloons()
                     # Clear the form
                     st.rerun()
@@ -96,6 +104,38 @@ elif page == "📋 View Notes":
                     st.write(f"**ID:** {note[0]}")
                     st.write(f"**Content:** {note[1]}")
                     st.write(f"**Added:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    
+                    # Add delete button with confirmation
+                    col1, col2 = st.columns([1, 4])
+                    with col1:
+                        if st.button(f"🗑️ Delete", key=f"delete_{note[0]}"):
+                            # Check if this is a confirmation click
+                            if st.session_state.get(f"confirm_delete_{note[0]}", False):
+                                # Actually delete the note
+                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE")
+                                if result:
+                                    st.success(f"✅ Note #{note[0]} deleted successfully!")
+                                    # Clear the confirmation flag
+                                    if f"confirm_delete_{note[0]}" in st.session_state:
+                                        del st.session_state[f"confirm_delete_{note[0]}"]
+                                    st.rerun()
+                            else:
+                                # Set confirmation flag for next click
+                                st.session_state[f"confirm_delete_{note[0]}"] = True
+                                st.rerun()
+                    
+                    # Show confirmation message if needed
+                    if st.session_state.get(f"confirm_delete_{note[0]}", False):
+                        st.warning(f"⚠️ Click '🗑️ Delete' again to confirm deletion of Note #{note[0]}")
+                        with col1:
+                            if st.button(f"✅ Confirm Delete", key=f"confirm_{note[0]}"):
+                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE")
+                                if result:
+                                    st.success(f"✅ Note #{note[0]} deleted successfully!")
+                                    # Clear the confirmation flag
+                                    if f"confirm_delete_{note[0]}" in st.session_state:
+                                        del st.session_state[f"confirm_delete_{note[0]}"]
+                                    st.rerun()
 
 # Page 3: Summarize Notes
 elif page == "🤖 Summarize Notes":
@@ -104,7 +144,7 @@ elif page == "🤖 Summarize Notes":
     
     if st.button("🧠 Generate Summary"):
         with st.spinner("🤖 AI is analyzing your notes..."):
-            summary = make_api_call("/summarize", method="POST")
+            summary = make_api_call("/summarize", method="POST", show_response=False)
             
             if summary:
                 st.success("✅ Summary generated!")
@@ -133,7 +173,7 @@ elif page == "❓ Ask Questions":
         if submitted:
             if question.strip():
                 with st.spinner("🤖 AI is thinking..."):
-                    result = make_api_call("/ask", method="POST", data={"query": question})
+                    result = make_api_call("/ask", method="POST", data={"query": question}, show_response=False)
                     
                     if result:
                         st.success("✅ Answer generated!")
