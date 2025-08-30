@@ -1,31 +1,59 @@
-# Bay2BayHacks2025 - AI-Powered Notes API
+# Bay2BayHacks2025 - AI-Powered Notes App
 
-A FastAPI-based notes application with OpenAI integration for the Bay2BayHacks2025 hackathon. This project allows users to create, retrieve, and get AI-powered summaries of their notes.
+A comprehensive notes application built with FastAPI and Streamlit for the Bay2BayHacks2025 hackathon. Create, manage, and get AI-powered insights from your notes with features like file uploads, audio transcription, and intelligent note editing.
 
 ## 🚀 Features
 
-- **FastAPI REST API** for managing notes
-- **SQLite database** for data persistence
-- **OpenAI GPT-4o-mini integration** for AI-powered note summarization
-- **Environment variable management** for secure API key handling
-- **Simple and clean API endpoints**
-- **Automatic API documentation** with Swagger UI
-- **🎨 Streamlit MVP Frontend** - Beautiful web interface for easy testing
+### Core Functionality
+- **📝 Create Notes** - Manual text entry with rich formatting
+- **📋 View & Manage Notes** - Browse all notes with expandable cards
+- **✏️ Edit Notes** - In-place editing with real-time updates
+- **🗑️ Delete Notes** - Two-step confirmation for safe deletion
+- **🔄 Real-time Updates** - Instant feedback and automatic refresh
+
+### File Upload Support
+- **📁 Text File Upload** - Support for TXT, MD, CSV, JSON files (up to 5MB)
+- **🎵 Audio File Upload** - Convert speech to text using OpenAI Whisper
+- **📄 File Preview** - Preview uploaded content before saving
+- **🔒 File Validation** - Size limits and encoding validation
+
+### AI-Powered Features
+- **🤖 AI Summarization** - Get intelligent summaries of all your notes
+- **❓ Smart Q&A** - Ask questions about your notes in natural language
+- **🎤 Audio Transcription** - Convert audio files to text automatically
+- **🧠 Context-Aware Responses** - AI references specific note IDs
+
+### User Experience
+- **🎨 Modern UI** - Clean, responsive Streamlit interface
+- **📱 Mobile-Friendly** - Works seamlessly on all devices
+- **⚡ Fast Performance** - Optimized API calls and database operations
+- **🛡️ Error Handling** - Comprehensive error messages and validation
 
 ## 🛠️ Tech Stack
 
-- **Backend**: FastAPI (Python)
-- **Frontend**: Streamlit (Python)
-- **Database**: SQLite
-- **AI**: OpenAI GPT-4o-mini
-- **Environment**: python-dotenv
-- **Server**: Uvicorn
+### Backend
+- **FastAPI** - Modern, fast web framework for building APIs
+- **SQLite** - Lightweight, serverless database
+- **Pydantic** - Data validation and settings management
+- **Uvicorn** - Lightning-fast ASGI server
+
+### Frontend
+- **Streamlit** - Beautiful web interface for data apps
+- **Requests** - HTTP library for API communication
+
+### AI & External Services
+- **OpenAI GPT-4o-mini** - AI summarization and Q&A
+- **OpenAI Whisper** - Audio transcription service
+
+### Development Tools
+- **python-dotenv** - Environment variable management
+- **Context Managers** - Safe database connections
 
 ## 📋 Prerequisites
 
-- Python 3.8+
-- OpenAI API key
-- Git
+- **Python 3.8+**
+- **OpenAI API key** (for AI features)
+- **Git** (for cloning)
 
 ## 🚀 Quick Start
 
@@ -35,28 +63,24 @@ git clone <your-repo-url>
 cd Bay2BayHacks2025
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate virtual environment
 ```bash
+# Create virtual environment
 python -m venv venv
-```
 
-### 3. Activate the virtual environment
-**Windows:**
-```bash
+# Activate (Windows)
 venv\Scripts\activate
-```
 
-**macOS/Linux:**
-```bash
+# Activate (macOS/Linux)
 source venv/bin/activate
 ```
 
-### 4. Install dependencies
+### 3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Set up environment variables
+### 4. Set up environment variables
 Create a `.env` file in the root directory:
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
@@ -64,21 +88,14 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 **Get your OpenAI API key from:** https://platform.openai.com/api-keys
 
-### 6. Run the application
+### 5. Run the application
 
-#### Option A: Easy Launcher (Recommended)
-```bash
-python run_app.py
-```
-Choose option 3 to run both backend and frontend.
-
-#### Option B: Manual Start
-**Start the FastAPI backend:**
+#### Start the FastAPI backend:
 ```bash
 uvicorn app:app --reload
 ```
 
-**In a new terminal, start the Streamlit frontend:**
+#### In a new terminal, start the Streamlit frontend:
 ```bash
 streamlit run streamlit_app.py
 ```
@@ -91,134 +108,186 @@ streamlit run streamlit_app.py
 
 ## 📚 API Endpoints
 
-### Add a Note
+### Core Note Operations
 ```http
+# Add a new note
 POST /add_note
 Content-Type: application/json
-
 {
     "content": "Your note content here"
 }
-```
 
-### Get All Notes
-```http
+# Get all notes
 GET /get_notes
+
+# Edit a note
+PUT /edit_note/{note_id}
+Content-Type: application/json
+{
+    "content": "Updated note content"
+}
+
+# Delete a note
+DELETE /delete_note/{note_id}
 ```
 
-### Summarize Notes
+### AI Features
 ```http
+# Summarize all notes
 POST /summarize
-```
 
-### Ask Questions
-```http
+# Ask questions about notes
 POST /ask
 Content-Type: application/json
-
 {
     "query": "What did I write about groceries?"
 }
+
+# Transcribe audio file
+POST /transcribe_audio
+Content-Type: multipart/form-data
+audio_file: [audio file]
 ```
 
-### Interactive API Documentation
+### API Information
 ```http
-GET /docs
+# Get API information
+GET /
 ```
-Visit http://localhost:8000/docs for interactive Swagger UI documentation.
 
 ## 🎨 Streamlit Frontend Features
 
-The Streamlit MVP provides a beautiful web interface with:
+### 📝 Add Note Page
+- **Manual Entry** - Rich text area for note creation
+- **File Upload** - Drag & drop text files (TXT, MD, CSV, JSON)
+- **Audio Upload** - Upload audio files for transcription
+- **File Preview** - Preview content before saving
+- **Size Validation** - 5MB limit for text files, 25MB for audio
 
-- **📝 Add Notes** - Easy note creation with text area
-- **📋 View Notes** - Browse all your notes in expandable cards
-- **🤖 AI Summarizer** - One-click AI-powered note summarization
-- **❓ Ask Questions** - Query your notes with natural language
-- **🔄 Real-time Updates** - Instant feedback and refresh capabilities
-- **📱 Responsive Design** - Works on desktop and mobile
+### 📋 View Notes Page
+- **Expandable Cards** - Clean note display with previews
+- **Edit Mode** - In-place editing with save/cancel options
+- **Delete Confirmation** - Two-step deletion for safety
+- **Real-time Updates** - Automatic refresh after changes
+- **Note ID Display** - Easy reference for note management
+
+### 🤖 AI Features
+- **One-Click Summarization** - Generate AI summaries instantly
+- **Natural Language Q&A** - Ask questions about your notes
+- **Context-Aware Responses** - AI references specific note IDs
+- **Audio Transcription** - Convert speech to text automatically
+
+### 🎯 User Experience
+- **Responsive Design** - Works on desktop, tablet, and mobile
+- **Loading Indicators** - Visual feedback during operations
+- **Error Messages** - Clear, helpful error notifications
+- **Success Feedback** - Confirmation messages and animations
 
 ## 📁 Project Structure
 
 ```
 Bay2BayHacks2025/
-├── app.py              # Main FastAPI application
-├── streamlit_app.py    # Streamlit frontend
-├── run_app.py          # Easy launcher script
-├── requirements.txt    # Python dependencies
-├── notes.db           # SQLite database (auto-created, ignored by git)
-├── venv/              # Virtual environment (ignored by git)
-├── .env               # Environment variables (ignored by git)
-├── .gitignore         # Git ignore rules
-├── LICENSE            # MIT License
-└── README.md          # This file
+├── app.py                 # FastAPI backend application
+├── streamlit_app.py       # Streamlit frontend interface
+├── requirements.txt       # Python dependencies
+├── notes.db              # SQLite database (auto-created)
+├── .env                  # Environment variables (create this)
+├── .gitignore           # Git ignore rules
+├── LICENSE              # MIT License
+└── README.md            # This file
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
+- `OPENAI_API_KEY` - Your OpenAI API key (required for AI features)
 
 ### Database
-- The SQLite database (`notes.db`) is automatically created on first run
-- Database file is ignored by Git for security
+- **Auto-created** - SQLite database (`notes.db`) is created automatically
+- **Persistent** - Data persists between application restarts
+- **Secure** - Database file is ignored by Git
+
+### File Upload Limits
+- **Text Files**: 5MB maximum
+- **Audio Files**: 25MB maximum (OpenAI Whisper limit)
+- **Supported Formats**: TXT, MD, CSV, JSON, WAV, MP3, M4A, OGG
 
 ## 🧪 Testing the Application
 
 ### Using the Streamlit Frontend (Recommended)
 1. Open http://localhost:8501 in your browser
-2. Navigate through the sidebar to test different features
-3. Add notes, view them, and try the AI features
+2. Navigate through the sidebar to test different features:
+   - **Add Note**: Try manual entry and file uploads
+   - **View Notes**: Test editing and deletion
+   - **Summarize**: Generate AI summaries
+   - **Ask Questions**: Query your notes with natural language
 
-### Using curl
-
-**Add a note:**
+### Using the API Directly
 ```bash
+# Add a note
 curl -X POST "http://localhost:8000/add_note" \
      -H "Content-Type: application/json" \
      -d '{"content": "Buy groceries tomorrow"}'
-```
 
-**Get all notes:**
-```bash
+# Get all notes
 curl -X GET "http://localhost:8000/get_notes"
-```
 
-**Summarize notes:**
-```bash
+# Edit a note (replace {note_id} with actual ID)
+curl -X PUT "http://localhost:8000/edit_note/{note_id}" \
+     -H "Content-Type: application/json" \
+     -d '{"content": "Updated grocery list"}'
+
+# Delete a note (replace {note_id} with actual ID)
+curl -X DELETE "http://localhost:8000/delete_note/{note_id}"
+
+# Summarize notes
 curl -X POST "http://localhost:8000/summarize"
-```
 
-**Ask a question:**
-```bash
+# Ask a question
 curl -X POST "http://localhost:8000/ask" \
      -H "Content-Type: application/json" \
      -d '{"query": "What did I write about groceries?"}'
 ```
 
-### Using the Swagger UI
-1. Open http://localhost:8000/docs in your browser
+### Using Swagger UI
+1. Open http://localhost:8000/docs
 2. Click on any endpoint to expand it
 3. Click "Try it out" to test the endpoint
 4. Enter your data and click "Execute"
 
-## 🔒 Security Features
+## 🔒 Security & Best Practices
 
-- **Environment variables** for sensitive data
-- **SQL parameterization** to prevent injection attacks
-- **Input validation** using Pydantic models
-- **API key validation** on startup
+### Security Features
+- **Environment Variables** - Secure API key management
+- **SQL Parameterization** - Prevents injection attacks
+- **Input Validation** - Pydantic models for data validation
+- **File Type Validation** - Secure file upload handling
+- **Size Limits** - Prevents resource exhaustion
+
+### Code Quality
+- **Error Handling** - Comprehensive try-catch blocks
+- **Database Connections** - Context managers for safe connections
+- **Session State Management** - Proper Streamlit state handling
+- **Clean Code** - Well-documented and maintainable codebase
 
 ## 🚀 Deployment
 
 ### Local Development
 ```bash
-python run_app.py
+# Backend
+uvicorn app:app --reload
+
+# Frontend (in separate terminal)
+streamlit run streamlit_app.py
 ```
 
 ### Production
 ```bash
+# Backend
 uvicorn app:app --host 0.0.0.0 --port 8000
+
+# Frontend
+streamlit run streamlit_app.py --server.port 8501
 ```
 
 ## 🤝 Contributing
@@ -235,20 +304,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- FastAPI for the excellent web framework
-- Streamlit for the beautiful frontend framework
-- OpenAI for the AI capabilities
-- Bay2BayHacks2025 organizers for the hackathon opportunity
+- **FastAPI** - For the excellent web framework
+- **Streamlit** - For the beautiful frontend framework
+- **OpenAI** - For the AI capabilities (GPT-4o-mini and Whisper)
+- **Bay2BayHacks2025** - For the hackathon opportunity
 
-## 📞 Support
+## 📞 Support & Troubleshooting
 
-If you encounter any issues or have questions:
+### Common Issues
+1. **API Connection Error** - Ensure FastAPI server is running on port 8000
+2. **OpenAI API Error** - Check your API key in the `.env` file
+3. **File Upload Issues** - Verify file size and format restrictions
+4. **Database Errors** - Check file permissions for `notes.db`
+
+### Getting Help
 1. Check the [API documentation](http://localhost:8000/docs)
 2. Try the [Streamlit frontend](http://localhost:8501)
-3. Review the error messages in the console
-4. Ensure your OpenAI API key is correctly set in the `.env` file
-5. Make sure all dependencies are installed
+3. Review console error messages
+4. Ensure all dependencies are installed correctly
 
 ---
 
 **Happy coding! 🎉**
+
+*Built with ❤️ for Bay2BayHacks2025*

@@ -1,10 +1,6 @@
 import streamlit as st
 import requests
-import json
 from datetime import datetime
-import io
-import tempfile
-import os
 
 # Configure the page
 st.set_page_config(
@@ -27,11 +23,10 @@ page = st.sidebar.selectbox(
     ["📝 Add Note", "📋 View Notes", "🤖 Summarize Notes", "❓ Ask Questions"]
 )
 
-# Initialize session state
-if 'notes' not in st.session_state:
-    st.session_state.notes = []
+# Initialize session state for editing and delete confirmations
+# Note: Session state variables are created dynamically as needed
 
-# Function to make API calls
+# Function to make API calls to the FastAPI backend
 def make_api_call(endpoint, method="GET", data=None, show_response=True, files=None):
     try:
         url = f"{API_BASE_URL}{endpoint}"
@@ -100,17 +95,28 @@ if page == "📝 Add Note":
     # Handle text file upload
     if uploaded_text_file is not None:
         try:
-            # Read file content
-            file_content = uploaded_text_file.read().decode('utf-8')
-            st.success(f"✅ Text file '{uploaded_text_file.name}' uploaded successfully!")
-            st.text_area("File Content Preview:", file_content, height=100, disabled=True)
+            # Check file size (limit to 5MB for text files)
+            if uploaded_text_file.size and uploaded_text_file.size > 5 * 1024 * 1024:
+                st.error("❌ File size must be less than 5MB")
+            else:
+                # Read file content
+                try:
+                    file_content = uploaded_text_file.read().decode('utf-8')
+                    st.success(f"✅ Text file '{uploaded_text_file.name}' uploaded successfully!")
+                    st.text_area("File Content Preview:", file_content, height=100, disabled=True)
+                except UnicodeDecodeError:
+                    st.error("❌ Unable to read file. Please ensure it's a valid text file with UTF-8 encoding.")
+                    file_content = None
             
             # Add button to save file content as note
             if st.button("💾 Save Text File as Note", key="save_text"):
-                result = make_api_call("/add_note", method="POST", data={"content": file_content})
-                if result:
-                    st.balloons()
-                    st.rerun()
+                if file_content:
+                    result = make_api_call("/add_note", method="POST", data={"content": file_content})
+                    if result:
+                        st.balloons()
+                        st.rerun()
+                else:
+                    st.error("❌ No valid content to save")
         except Exception as e:
             st.error(f"❌ Error reading text file: {str(e)}")
     
@@ -243,9 +249,9 @@ elif page == "📋 View Notes":
                         
                         with col2:
                             if st.button(f"🗑️ Delete", key=f"delete_{note[0]}"):
-                                # Check if this is a confirmation click
+                                # Two-step delete confirmation: first click sets flag, second click deletes
                                 if st.session_state.get(f"confirm_delete_{note[0]}", False):
-                                    # Actually delete the note
+                                    # Second click: actually delete the note
                                     result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
                                     if result:
                                         st.success(f"✅ Note #{note[0]} deleted successfully!")
@@ -254,11 +260,11 @@ elif page == "📋 View Notes":
                                             del st.session_state[f"confirm_delete_{note[0]}"]
                                         st.rerun()
                                 else:
-                                    # Set confirmation flag for next click
+                                    # First click: set confirmation flag for next click
                                     st.session_state[f"confirm_delete_{note[0]}"] = True
                                     st.rerun()
                         
-                        # Show confirmation message if needed
+                        # Show confirmation UI when delete is pending
                         if st.session_state.get(f"confirm_delete_{note[0]}", False):
                             st.warning(f"⚠️ Click '✅Confirm Delete' to delete the Note #{note[0]}")
                             with col1:
