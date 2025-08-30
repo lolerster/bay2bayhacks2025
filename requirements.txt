@@ -1,12 +1,21 @@
+# Web framework and server
 fastapi
 uvicorn
+
+# AI and OpenAI integration
 openai
+
+# Environment and configuration
 python-dotenv
+
+# Frontend framework
 streamlit
+
+# HTTP requests and API calls
 requests
+
+# Data validation and serialization
 pydantic
-# Audio processing dependencies
-pydub
-speechrecognition
-# Additional dependencies for file handling
+
+# File upload handling
 python-multipart
