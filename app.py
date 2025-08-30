@@ -63,7 +63,7 @@ def add_note(note: Note):
         cur = conn.cursor()  # create a new cursor per request
         cur.execute("INSERT INTO notes (content) VALUES (?)", (note.content,))
         conn.commit()
-        return {"message": "Note added successfully"}
+        return {"message": "Note added successfully", "id": cur.lastrowid}
     except Exception as e:
         return {"error": str(e)}
 

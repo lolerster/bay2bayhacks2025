@@ -8,3 +8,5 @@ pydantic
 # Audio processing dependencies
 pydub
 speechrecognition
+# Additional dependencies for file handling
+python-multipart

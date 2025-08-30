@@ -9,3 +9,6 @@ notes.db
 
 # Python cache files
 __pycache__/
+
+# Files used for testing
+test_files/
