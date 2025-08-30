@@ -35,6 +35,8 @@ if 'notes' not in st.session_state:
 def make_api_call(endpoint, method="GET", data=None, show_response=True, files=None):
     try:
         url = f"{API_BASE_URL}{endpoint}"
+        response = None
+        
         if method == "GET":
             response = requests.get(url)
         elif method == "POST":
@@ -42,10 +44,15 @@ def make_api_call(endpoint, method="GET", data=None, show_response=True, files=N
                 response = requests.post(url, files=files)
             else:
                 response = requests.post(url, json=data)
+        elif method == "PUT":
+            response = requests.put(url, json=data)
         elif method == "DELETE":
             response = requests.delete(url)
+        else:
+            st.error(f"❌ Unsupported HTTP method: {method}")
+            return None
         
-        if response.status_code == 200:
+        if response and response.status_code == 200:
             result = response.json()
             # Print the return message for debugging/information (only if show_response=True)
             if show_response:
@@ -54,8 +61,11 @@ def make_api_call(endpoint, method="GET", data=None, show_response=True, files=N
                 elif isinstance(result, str):
                     st.info(f"📢 API Response: {result}")
             return result
-        else:
+        elif response:
             st.error(f"API Error: {response.status_code} - {response.text}")
+            return None
+        else:
+            st.error("❌ No response received from API")
             return None
     except requests.exceptions.ConnectionError:
         st.error("❌ Cannot connect to the API. Make sure your FastAPI server is running on http://localhost:8000")
@@ -189,40 +199,77 @@ elif page == "📋 View Notes":
             for i, note in enumerate(notes, 1):
                 with st.expander(f"📄 Note #{note[0]} - {note[1][:50]}..."):
                     st.write(f"**ID:** {note[0]}")
-                    st.write(f"**Content:** {note[1]}")
-                    st.write(f"**Added:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                     
-                    # Add delete button with confirmation
-                    col1, col2 = st.columns([1, 4])
-                    with col1:
-                        if st.button(f"🗑️ Delete", key=f"delete_{note[0]}"):
-                            # Check if this is a confirmation click
-                            if st.session_state.get(f"confirm_delete_{note[0]}", False):
-                                # Actually delete the note
-                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
-                                if result:
-                                    st.success(f"✅ Note #{note[0]} deleted successfully!")
-                                    # Clear the confirmation flag
-                                    if f"confirm_delete_{note[0]}" in st.session_state:
-                                        del st.session_state[f"confirm_delete_{note[0]}"]
-                                    st.rerun()
-                            else:
-                                # Set confirmation flag for next click
-                                st.session_state[f"confirm_delete_{note[0]}"] = True
-                                st.rerun()
+                    # Check if this note is being edited
+                    is_editing = st.session_state.get(f"editing_{note[0]}", False)
                     
-                    # Show confirmation message if needed
-                    if st.session_state.get(f"confirm_delete_{note[0]}", False):
-                        st.warning(f"⚠️ Click '✅Confirm Delete' to delete the Note #{note[0]}")
+                    if is_editing:
+                        # Edit mode
+                        edited_content = st.text_area(
+                            "Edit Note:",
+                            value=note[1],
+                            height=150,
+                            key=f"edit_text_{note[0]}"
+                        )
+                        
+                        col1, col2, col3 = st.columns([1, 1, 2])
                         with col1:
-                            if st.button(f"✅ Confirm Delete", key=f"confirm_{note[0]}"):
-                                result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
-                                if result:
-                                    st.success(f"✅ Note #{note[0]} deleted successfully!")
-                                    # Clear the confirmation flag
-                                    if f"confirm_delete_{note[0]}" in st.session_state:
-                                        del st.session_state[f"confirm_delete_{note[0]}"]
+                            if st.button(f"💾 Save", key=f"save_{note[0]}"):
+                                if edited_content.strip():
+                                    result = make_api_call(f"/edit_note/{note[0]}", method="PUT", data={"content": edited_content}, show_response=False)
+                                    if result:
+                                        st.success(f"✅ Note #{note[0]} updated successfully!")
+                                        st.session_state[f"editing_{note[0]}"] = False
+                                        st.rerun()
+                                else:
+                                    st.error("❌ Note content cannot be empty!")
+                        
+                        with col2:
+                            if st.button(f"❌ Cancel", key=f"cancel_{note[0]}"):
+                                st.session_state[f"editing_{note[0]}"] = False
+                                st.rerun()
+                    else:
+                        # View mode
+                        st.write(f"**Content:** {note[1]}")
+                        st.write(f"**Added:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                        
+                        # Action buttons
+                        col1, col2, col3 = st.columns([1, 1, 2])
+                        
+                        with col1:
+                            if st.button(f"✏️ Edit", key=f"edit_{note[0]}"):
+                                st.session_state[f"editing_{note[0]}"] = True
+                                st.rerun()
+                        
+                        with col2:
+                            if st.button(f"🗑️ Delete", key=f"delete_{note[0]}"):
+                                # Check if this is a confirmation click
+                                if st.session_state.get(f"confirm_delete_{note[0]}", False):
+                                    # Actually delete the note
+                                    result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
+                                    if result:
+                                        st.success(f"✅ Note #{note[0]} deleted successfully!")
+                                        # Clear the confirmation flag
+                                        if f"confirm_delete_{note[0]}" in st.session_state:
+                                            del st.session_state[f"confirm_delete_{note[0]}"]
+                                        st.rerun()
+                                else:
+                                    # Set confirmation flag for next click
+                                    st.session_state[f"confirm_delete_{note[0]}"] = True
                                     st.rerun()
+                        
+                        # Show confirmation message if needed
+                        if st.session_state.get(f"confirm_delete_{note[0]}", False):
+                            st.warning(f"⚠️ Click '✅Confirm Delete' to delete the Note #{note[0]}")
+                            with col1:
+                                if st.button(f"✅ Confirm Delete", key=f"confirm_{note[0]}"):
+                                    result = make_api_call(f"/delete_note/{note[0]}", method="DELETE", show_response=False)
+                                    if result:
+                                        st.success(f"✅ Note #{note[0]} deleted successfully!")
+                                        # Clear the confirmation flag
+                                        if f"confirm_delete_{note[0]}" in st.session_state:
+                                            del st.session_state[f"confirm_delete_{note[0]}"]
+                                        st.rerun()
 
 # Page 3: Summarize Notes
 elif page == "🤖 Summarize Notes":

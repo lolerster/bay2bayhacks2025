@@ -62,7 +62,9 @@ def root():
         "version": "1.0.0",
         "endpoints": {
             "add_note": "POST /add_note",
+            "edit_note": "PUT /edit_note/{note_id}",
             "get_notes": "GET /get_notes", 
+            "delete_note": "DELETE /delete_note/{note_id}",
             "summarize": "POST /summarize",
             "ask": "POST /ask",
             "transcribe_audio": "POST /transcribe_audio"
@@ -85,6 +87,24 @@ def add_note(note: Note):
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding note: {str(e)}")
+
+@app.put("/edit_note/{note_id}")
+def edit_note(note_id: int, note: Note):
+    """Edit an existing note by ID"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE notes SET content = ? WHERE id = ?", (note.content, note_id))
+            conn.commit()
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Note not found")
+            return {"message": f"Note {note_id} updated successfully"}
+    except HTTPException:
+        raise
+    except sqlite3.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating note: {str(e)}")
 
 @app.delete("/delete_note/{note_id}")
 def delete_note(note_id: int):
